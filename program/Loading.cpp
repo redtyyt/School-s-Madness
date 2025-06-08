@@ -3,14 +3,14 @@
 
 Loading::Loading() : rotationSpeed(180.f) 
 {
-    if (!bgTexture.loadFromFile("D:\\Users\\RedTy_ YT\\Desktop\\Scuola\\LevelsSchoolMadness\\program\\optionsBackground.png"))
+    if (!bgTexture.loadFromFile("assets/optionsBackground.png"))
     {
         std::cout << "Immagine di background non trovata" << std::endl;
     }
     bgSprite.setTexture(bgTexture);
     // Puoi scalare il background se necessario (ad esempio, adattandolo alle dimensioni della finestra
 
-    if (!font.loadFromFile("D:\\Users\\RedTy_ YT\\Desktop\\Scuola\\LevelsSchoolMadness\\program\\AFont.ttf"))
+    if (!font.loadFromFile("assets/AFont.ttf"))
     {
         std::cout << "Font non trovato" << std::endl;
     }

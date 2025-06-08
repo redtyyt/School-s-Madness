@@ -14,6 +14,8 @@ enum class Location {
     CorridoioMedie2
 };
 
+enum class InGameState { Storia, Cap1Intro, TransitionToCortile, Cortile };
+
 class InGame
 {
 private:
@@ -52,14 +54,15 @@ private:
 
     Location currentLoc = Location::Cortile;
     static sf::RenderWindow locWindow;
+    InGameState sceneState = InGameState::Storia;
 public:
     InGame();
     bool loadBackground(const std::string &filename);
     void playCampanaLoop();
     void draw(sf::RenderWindow &window);
     bool createBackgrounds(sf::RenderWindow &window);
-    void updateGameScene();
-    void startTransition(Location newState);
+    void updateGameScene(sf::RenderWindow &window);
+    void startTransition(Location newState, sf::RenderWindow &window);
     void drawScene(sf::RenderWindow &window);
     void initNewCapitoloIntro(sf::RenderWindow &window);
     void drawCapitoloIntro(sf::RenderWindow &window);

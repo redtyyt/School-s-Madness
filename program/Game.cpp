@@ -76,7 +76,7 @@ void Game::drawText(sf::Text text)
 
 sf::Sprite Game::getBackground()
 {
-    if (!bgTexture.loadFromFile("D:\\Users\\RedTy_ YT\\Desktop\\Scuola\\LevelsSchoolMadness\\program\\mainMenuNoText.png"))
+    if (!bgTexture.loadFromFile("assets/mainMenuNoText.png"))
     {
         std::cout << "Immagine background non trovata." << std::endl;
     }
@@ -122,7 +122,7 @@ void Game::playMenuBackgroundMusic()
 {
     if (currentState == GameState::MainMenu || currentState == GameState::Options)
     {
-        if (!backMenuMusic.openFromFile("D:\\Users\\RedTy_ YT\\Desktop\\Scuola\\LevelsSchoolMadness\\program\\musica\\Main Menu.wav"))
+        if (!backMenuMusic.openFromFile("assets/musica/Main Menu.wav"))
         {
             std::cout << "Impossibile trovare la canzone di background" << std::endl;
         }
@@ -140,7 +140,7 @@ void Game::stopMenuBackgroundMusic()
 void Game::playButtonSound()
 {
     static sf::SoundBuffer buffer1;
-    if (!buffer1.loadFromFile("D:\\Users\\RedTy_ YT\\Desktop\\Scuola\\LevelsSchoolMadness\\program\\suoni\\pulsante.ogg"))
+    if (!buffer1.loadFromFile("assets/suoni/pulsante.ogg"))
     {
         std::cerr << "Impossibile trovare il file .ogg di un suono";
         return;
@@ -307,20 +307,26 @@ void Game::update()
 
 void Game::render()
 {
-    sf::Sprite background = getBackground();
     this->window->clear();
-    this->window->draw(background);
 
     switch(currentState)
     {
         case GameState::MainMenu:
-            menu.draw(*this->window);
-            for (auto &particle : particles) {
-                this->window->draw(particle.shape);
+            {
+                sf::Sprite background = getBackground();
+                this->window->draw(background);
+                menu.draw(*this->window);
+                for (auto &particle : particles) {
+                    this->window->draw(particle.shape);
+                }
             }
             break;
         case GameState::Options:
-            optionsMenu->draw(*this->window);
+            {
+                sf::Sprite background = getBackground();
+                this->window->draw(background);
+                optionsMenu->draw(*this->window);
+            }
             break;
         case GameState::Play:
             if (gameScene == nullptr)
@@ -351,6 +357,7 @@ void Game::render()
             break;
         case GameState::Game:
             gameScene->drawScene(*this->window);
+            break;
     }
 
     // Disegna l'overlay di transizione, se attivo
@@ -358,4 +365,5 @@ void Game::render()
         this->window->draw(transitionOverlay);
 
     this->window->display();
+    std::cout << "Alpha overlay: " << (int)transitionOverlay.getFillColor().a << std::endl;
 }

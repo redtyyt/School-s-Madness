@@ -2,10 +2,10 @@
 #include <iostream>
 
 OptionsMenu::OptionsMenu(sf::RenderWindow &window) {
-    if (!font.loadFromFile("D:\\Users\\RedTy_ YT\\Desktop\\Scuola\\LevelsSchoolMadness\\program\\AFont.ttf"))
+    if (!font.loadFromFile("assets/AFont.ttf"))
         std::cout << "Impossibile trovare il font per le opzioni" << std::endl;
 
-    if (!bgTexture.loadFromFile("D:\\Users\\RedTy_ YT\\Desktop\\Scuola\\LevelsSchoolMadness\\program\\optionsBackground.png"))
+    if (!bgTexture.loadFromFile("assets/optionsBackground.png"))
         std::cout << "Impossibile caricare il background delle opzioni" << std::endl;
     bgSprite.setTexture(bgTexture);
     // Scale iniziale (verrà aggiornato in updateLayout)

@@ -5,7 +5,7 @@
 
 MainMenu::MainMenu()
 {
-    if (!font.loadFromFile("D:\\Users\\RedTy_ YT\\Desktop\\Scuola\\LevelsSchoolMadness\\program\\AFont.ttf"))
+    if (!font.loadFromFile("assets/AFont.ttf"))
     {
         std::cout << "Impossibile trovare il font" << std::endl;
     }
