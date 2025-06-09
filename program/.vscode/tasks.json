@@ -13,6 +13,7 @@
                 "${workspaceFolder}\\OptionsMenu.cpp",
                 "${workspaceFolder}\\Loading.cpp",
                 "${workspaceFolder}\\In-Game.cpp",
+                "${workspaceFolder}\\Pawn.cpp",
                 "-o",
                 "${workspaceFolder}\\app.exe",
                 "-I", "C:/msys64/ucrt64/include",

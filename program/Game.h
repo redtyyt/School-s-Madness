@@ -17,6 +17,7 @@
 #include "OptionsMenu.h"
 #include "Loading.h"
 #include "In-Game.h"
+#include "Pawn.h"
 
 enum class GameState { 
     MainMenu, 
@@ -48,6 +49,7 @@ private:
     float loadingStateTimer = 0.f;
     float loadingDelay = 4.f; // delay in secondi
     sf::Music backMenuMusic;
+    Pawn player;
     
     float dt;
     bool fullscreen = false;

@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
+#include <vector>
 
 enum class Location {
     Cortile,
@@ -15,6 +16,10 @@ enum class Location {
 };
 
 enum class InGameState { Storia, Cap1Intro, TransitionToCortile, Cortile };
+
+enum class collisionType {
+    None, LeftWall, RightWall, Ground, Stairs
+};
 
 class InGame
 {
@@ -46,6 +51,13 @@ private:
     bool fadeOutPhase = false;  
     bool introStarted = false;
     bool traveled = false;
+    bool loaded = false;
+    bool play = false;
+    std::vector<sf::RectangleShape> colliders;
+    sf::Vector2u winSize;
+    sf::Music ambiance;
+
+    sf::RectangleShape gndCollider;
 
     bool transitioning = false;
     float transitionTimer;
@@ -67,4 +79,21 @@ public:
     void initNewCapitoloIntro(sf::RenderWindow &window);
     void drawCapitoloIntro(sf::RenderWindow &window);
     void drawCortile(sf::RenderWindow &window);
+    bool setSceneState(InGameState &sceneState);
+
+     //////////////
+     // AMBIANCE //
+     //////////////
+
+    void getAmbienceBuf();
+    void playAmbience();
+    
+    ///////////////
+    // COLLIDERS //
+    ///////////////
+
+    void createColliders(const sf::RenderWindow& window);
+    void updateColliders(const sf::RenderWindow& window);
+    collisionType checkCollision(const sf::FloatRect& playerBoundaries);
+    void drawColliders(sf::RenderWindow &window);
 };

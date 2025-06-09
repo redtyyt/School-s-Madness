@@ -2,10 +2,12 @@
 #include "MainMenu.h"
 #include "Loading.h"
 #include <cstdlib>  // per rand()
+#include <cmath>    // per std::sqrt
 
 void Game::initializeVars()
 {
     this->window = nullptr;
+    playMenuBackgroundMusic();
 }
 
 void Game::initWindow()
@@ -22,8 +24,6 @@ void Game::initWindow()
         videoMode.width = 1280;
         this->window = new sf::RenderWindow(videoMode, "Game", sf::Style::Titlebar | sf::Style::Close);
     }
-    
-    playMenuBackgroundMusic();
     // Aggiorna la dimensione dell'overlay della transizione
     transitionOverlay.setSize(sf::Vector2f(videoMode.width, videoMode.height));
     transitionOverlay.setFillColor(sf::Color(0, 0, 0, 0));
@@ -44,13 +44,17 @@ void Game::initParticles()
     }
 }
 
-Game::Game()
+Game::Game() : player(50.f, 200.f)
 {
     this->initializeVars();
     this->initWindow();
-    // Crea l'istanza di OptionsMenu passando la finestra esistente
     this->optionsMenu = new OptionsMenu(*this->window);
     this->initParticles();
+
+    // Imposta la posizione iniziale del player vicino al pavimento
+    float groundY = this->window->getSize().y * 0.9f; // Posizione del pavimento
+    float playerHeight = player.getBounds().height;   // Altezza del player
+    player.setPosition(sf::Vector2f(100.f, groundY - playerHeight)); // Posiziona vicino al pavimento
 }
 
 Game::~Game()
@@ -122,13 +126,15 @@ void Game::playMenuBackgroundMusic()
 {
     if (currentState == GameState::MainMenu || currentState == GameState::Options)
     {
-        if (!backMenuMusic.openFromFile("assets/musica/Main Menu.wav"))
-        {
-            std::cout << "Impossibile trovare la canzone di background" << std::endl;
-        }
-        backMenuMusic.setLoop(true);
-        backMenuMusic.setVolume(30.f);
-        backMenuMusic.play();
+        std::thread([this]{
+            if (!backMenuMusic.openFromFile("assets/musica/Main Menu.wav"))
+            {
+                std::cout << "Impossibile trovare la canzone di background" << std::endl;
+            }
+            backMenuMusic.setLoop(true);
+            backMenuMusic.setVolume(30.f);
+            backMenuMusic.play();
+        }).detach();
     }
 }
 
@@ -229,9 +235,31 @@ void Game::pollEvents()
                         startTransition(GameState::Game);
                     }
                 }
+                else if (ev.key.code == sf::Keyboard::F11)
+                {
+                    if (currentState == GameState::MainMenu || currentState == GameState::Options)
+                    {
+                        toggleFullscreen();
+                    }
+                    
+                }
+                
                 break;
         }
     }
+
+    sf::Vector2f direction(0.f, 0.f);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) direction.x -= 1.f;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) direction.y += 1.f;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) direction.x += 1.f;
+
+    if (direction.x != 0.f || direction.y != 0.f)
+    {
+        float len = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        direction /= len;
+    }
+    
+    player.move(direction, this->dt);
 }
 
 void Game::updateParticles(float dt)
@@ -255,6 +283,41 @@ void Game::update()
     this->dt = dt;
 
     this->pollEvents();
+
+    if (currentState == GameState::Game)
+    {
+        player.applyGravity(this->dt);
+
+        gameScene->updateColliders(*this->window);
+        collisionType collision = gameScene->checkCollision(player.getBounds());
+        
+        if (collision == collisionType::Ground)
+        {
+            player.handleCollisionWithGround(player, *this->window);
+
+            // Debug
+            std::cout << "Player collision with ground. Position updated to: " 
+                      << player.getPosition().x << ", " << player.getPosition().y << std::endl;
+        }
+        else if (collision == collisionType::LeftWall)
+        {
+            sf::Vector2f plPos = player.getPosition();
+            player.setPosition(sf::Vector2f(plPos.x + 5.f, plPos.y)); // Sposta leggermente a destra
+        }
+        else if (collision == collisionType::RightWall)
+        {
+            sf::Vector2f plPos = player.getPosition();
+            player.setPosition(sf::Vector2f(plPos.x - 5.f, plPos.y)); // Sposta leggermente a sinistra
+        }
+        else if (collision == collisionType::Stairs)
+        {
+            sf::Vector2f plPos = player.getPosition();
+            player.setPosition(sf::Vector2f(plPos.x, plPos.y - 5.f)); // Simula la salita
+            player.setVelY(-50.f); // Riduce la velocità verticale per simulare la salita
+        }
+        
+    }
+    
 
     // Aggiorna le particelle solo se siamo nel MainMenu e non in transizione
     if (currentState == GameState::MainMenu && !transitioning)
@@ -309,7 +372,7 @@ void Game::render()
 {
     this->window->clear();
 
-    switch(currentState)
+    switch (currentState)
     {
         case GameState::MainMenu:
             {
@@ -357,6 +420,11 @@ void Game::render()
             break;
         case GameState::Game:
             gameScene->drawScene(*this->window);
+            gameScene->draw(*this->window);
+            player.draw(*this->window);
+
+            InGameState newGame = InGameState::Cortile;
+            gameScene->setSceneState(newGame);
             break;
     }
 
@@ -365,5 +433,4 @@ void Game::render()
         this->window->draw(transitionOverlay);
 
     this->window->display();
-    std::cout << "Alpha overlay: " << (int)transitionOverlay.getFillColor().a << std::endl;
 }

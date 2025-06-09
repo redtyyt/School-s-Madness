@@ -8,6 +8,7 @@
 InGame::InGame()
 {
     loadBackground("assets/TramaInit.png"); // CARICA IL BACKGROUND INIZIALE
+    getAmbienceBuf();
     playCampanaLoop();
     currentLoc = Location::Cortile; // initialize currentLoc
     targetState = Location::Cortile; // initialize targetState
@@ -72,34 +73,19 @@ void InGame::draw(sf::RenderWindow &window)
 
     if (sceneState == InGameState::Storia) {
         // Disegna la storia
+        sf::Vector2u winSize = window.getSize();
+        sf::Vector2u textureSize = storyTexture.getSize();
+        float scaleX = static_cast<float>(winSize.x) / textureSize.x;
+        float scaleY = static_cast<float>(winSize.y) / textureSize.y;
+        storySprite.setScale(scaleX, scaleY);
         window.draw(storySprite);
         continueText.setPosition(winSize.x / 2, winSize.y * 0.8f);
         window.draw(continueText);
     }
     else if (sceneState == InGameState::Cap1Intro) {
         // Disegna l'intro capitolo
-        window.draw(cap1Sprite);
-        continueText.setPosition(winSize.x / 2, winSize.y * 0.8f);
-        window.draw(continueText);
-
-        // Avvia il suono e la transizione SOLO una volta
-        if (!introStarted) {
-            introStarted = true;
-            std::thread([this]{
-                sf::SoundBuffer buf;
-                if (buf.loadFromFile("assets/suoni/introCapitolo.ogg")) {
-                    sf::Sound sound;
-                    sound.setBuffer(buf);
-                    sound.setVolume(30.f);
-                    sound.play();
-                    while (sound.getStatus() == sf::Sound::Playing)
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                }
-                // Avvia la transizione
-                sceneState = InGameState::TransitionToCortile;
-                transitionTimer = 0.f;
-            }).detach();
-        }
+        drawCapitoloIntro(window);
+        initNewCapitoloIntro(window); 
     }
     else if (sceneState == InGameState::TransitionToCortile) {
         // Fade out nero
@@ -117,9 +103,8 @@ void InGame::draw(sf::RenderWindow &window)
         }
     }
     else if (sceneState == InGameState::Cortile) {
-        // Disegna il cortile
-        window.draw(cortile);
-        // ...altri elementi del cortile...
+        drawCortile(window); // Disegna il cortile
+        playAmbience();
     }
 }
 
@@ -254,6 +239,8 @@ void InGame::startTransition(Location newState, sf::RenderWindow &window)
     if (newState == Location::Cortile)
     {
         window.draw(cortile); // DISEGNA IL CORTILE
+        getAmbienceBuf();
+        playAmbience();
     }
     else if (newState == Location::ScaleDiEntrata)
     {
@@ -284,9 +271,7 @@ void InGame::startTransition(Location newState, sf::RenderWindow &window)
 
 void InGame::drawScene(sf::RenderWindow &window)
 {
-    sf::Vector2u winSize = window.getSize();
     updateGameScene(window); // AGGIORNA LA SCENA DI GIOCO
-    initNewCapitoloIntro(window); // INIZIALIZZA L'INTRO DEL NUOVO CAPITOLO
 }
 
 void InGame::initNewCapitoloIntro(sf::RenderWindow &window)
@@ -349,4 +334,109 @@ void InGame::drawCapitoloIntro(sf::RenderWindow &window)
 void InGame::drawCortile(sf::RenderWindow &window)
 {
     sf::Vector2u winSize = window.getSize();
+    sf::Vector2u textureSize = cortileTexture.getSize();
+    float scaleX = static_cast<float>(winSize.x) / textureSize.x;
+    float scaleY = static_cast<float>(winSize.y) / textureSize.y;
+    cortile.setScale(scaleX, scaleY);
+    window.draw(cortile);
+}
+
+bool InGame::setSceneState(InGameState &newSceneState)
+{
+    sceneState = newSceneState;
+    return true;
+}
+
+            //////////////
+            // AMBIANCE //
+            //////////////
+
+void InGame::getAmbienceBuf()
+{
+    loaded = false;
+    if (!loaded) {
+        if (!ambiance.openFromFile("assets/suoni/night-ambience-normal.mp3"))
+        {
+            std::cerr << "Errore nel caricare il buffer dell'ambience" << std::endl;
+        }
+        ambiance.setVolume(40.f);
+        loaded = true;
+    }
+}
+
+void InGame::playAmbience()
+{
+    if (!play)
+    {
+        std::thread([this]{
+            ambiance.setLoop(true);
+            ambiance.play();
+        }).detach();
+        play = true;
+    }
+}
+
+            ///////////////
+            // COLLIDERS //
+            ///////////////
+
+void InGame::createColliders(const sf::RenderWindow &window)
+{
+    winSize = window.getSize();
+
+    // Collider per il pavimento
+    sf::RectangleShape groundCollider;
+    groundCollider.setSize(sf::Vector2f(winSize.x, winSize.y * 0.1f)); // 10% dell'altezza della finestra
+    groundCollider.setPosition(0.f, winSize.y * 0.9f); // Posizionato in basso
+    colliders.push_back(groundCollider);
+
+    // Collider per le scale centrali
+    sf::RectangleShape stairsCollider;
+    stairsCollider.setSize(sf::Vector2f(winSize.x * 0.2f, winSize.y * 0.2f)); // 20% larghezza, 20% altezza
+    stairsCollider.setPosition(winSize.x * 0.4f, winSize.y * 0.7f); // Posizionato al centro
+    colliders.push_back(stairsCollider);
+
+    // Collider per il muro sinistro
+    sf::RectangleShape leftWallCollider;
+    leftWallCollider.setSize(sf::Vector2f(winSize.x * 0.1f, winSize.y)); // 10% larghezza, altezza completa
+    leftWallCollider.setPosition(0.f, 0.f); // Posizionato a sinistra
+    colliders.push_back(leftWallCollider);
+
+    // Collider per il muro destro
+    sf::RectangleShape rightWallCollider;
+    rightWallCollider.setSize(sf::Vector2f(winSize.x * 0.1f, winSize.y)); // 10% larghezza, altezza completa
+    rightWallCollider.setPosition(winSize.x * 0.9f, 0.f); // Posizionato a destra
+    colliders.push_back(rightWallCollider);
+}
+
+void InGame::updateColliders(const sf::RenderWindow& window) 
+{
+    sf::Vector2u newSize = window.getSize();
+    if (newSize != winSize) {
+        winSize = newSize;
+        colliders.clear();
+        createColliders(window);
+    }
+}
+
+collisionType InGame::checkCollision(const sf::FloatRect& playerBounds) 
+{
+    for (const auto& collider : colliders) 
+    {
+        if (collider.getGlobalBounds().intersects(playerBounds)) 
+        {
+            if (collider.getPosition().x == 0.f) return collisionType::LeftWall;
+            else if (collider.getPosition().x + collider.getSize().x == winSize.x) return collisionType::RightWall;
+            else if (collider.getPosition().y + collider.getSize().y == winSize.y) return collisionType::Ground;
+            else if (collider.getPosition().y < playerBounds.top) return collisionType::Stairs;
+        }
+    }
+    return collisionType::None; // Nessuna collisione
+}
+
+void InGame::drawColliders(sf::RenderWindow &window)
+{
+    for (const auto &collider : colliders) {
+        window.draw(collider);
+    }
 }
